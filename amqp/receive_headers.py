@@ -21,18 +21,18 @@ queue_name = result.method.queue
 
 
 channel.queue_bind(exchange='headers_persistent',
-                   queue = queue_name,
-                   routing_key = '',
-                   arguments = {'ham': 'good',
-                                'spam': 'bad',
-                                'x-match':'all'})
+                   queue=queue_name,
+                   routing_key='',
+                   arguments={'ham': 'good',
+                              'spam': 'bad',
+                              'x-match':'all'})
 
 def callback(ch, method, properties, body):
-    print("{headers}:{body}".format(headers = properties.headers,
-                                    body = body))
+    print("{headers}:{body}".format(headers=properties.headers,
+                                    body=body))
 
 channel.basic_consume(callback,
-                      queue = queue_name,
+                      queue=queue_name,
                       no_ack=True)
 
 try:
