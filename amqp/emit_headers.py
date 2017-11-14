@@ -21,7 +21,7 @@ try:
             key, val = data.split('=')
             fields[key] = val
             continue
-        channel.basic_publish(exchange = 'testing',
+        channel.basic_publish(exchange = 'headers_persistent',
                               routing_key = '',
                               body = data,
                               properties = \

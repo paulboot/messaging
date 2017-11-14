@@ -20,10 +20,12 @@ if not result:
 queue_name = result.method.queue
 
 
-channel.queue_bind(exchange='testing',
+channel.queue_bind(exchange='headers_persistent',
                    queue = queue_name,
                    routing_key = '',
-                   arguments = {'ham': 'good', 'x-match':'any'})
+                   arguments = {'ham': 'good',
+                                'spam': 'bad',
+                                'x-match':'all'})
 
 def callback(ch, method, properties, body):
     print("{headers}:{body}".format(headers = properties.headers,
