@@ -9,8 +9,9 @@ connection = pika.BlockingConnection(pika.ConnectionParameters(
         host='localhost'))
 channel = connection.channel()
 
-channel.exchange_declare(exchange='testing',
-                         type='headers')
+channel.exchange_declare(exchange='headers_persistent',
+                         exchange_type='headers',
+                         durable=True)
 
 fields = {}
 try:
