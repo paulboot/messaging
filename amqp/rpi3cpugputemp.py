@@ -8,6 +8,9 @@ if sys.version_info < (3, 0):
 import subprocess
 import re
 import time
+import socket
+#import context
+import paho.mqtt.publish as publish
 
 # Dependencies
 # sudo -H pip3 install paho-mqtt
@@ -16,6 +19,10 @@ import time
 sensorCPU = '/sys/class/thermal/thermal_zone0/temp'
 sensorGPU = 'vcgencmd measure_temp'
 mqttHost = 'mo4.bocuse.nl'
+if socket.gethostname().find('.')>=0:
+    hostName=socket.gethostname()
+else:
+    hostName=socket.gethostbyaddr(socket.gethostname())[0]
 
 def getcputemp():
     """Returns temperature of the CPU"""
@@ -45,23 +52,28 @@ def publishtemperatures(topic, payload):
        port=1883, client_id=None, keepalive=60, will=None, auth=auth, tls=None,
        protocol=mqtt.MQTTv311, transport="tcp")
 
+
+def timenownano():
+    return "%18.f" % (time.time() * 10 ** 9)
+
+
 def main():
 
     #print(getcputemp())
     #print(getgputemp())
 
-    print("tijd: %18.f" % (time.time()*10**9))
-
     #h2o_feet,location=coyote_creek water_level=8.120, level\ description = "between 6 and 9 feet" 1439856000
     #weather,location=us-midwest temperature=82 1465839830100400200
-    #observations,host="gw1.bocuse.nl" CPUtemperature=18.1,GPUtemperature=11.1 1465839830100400200
+    #observations,host=gw1.bocuse.nl,CPUtemperatureUom='°C',GPUtemperatureUom='°C' CPUtemperature=18.1,GPUtemperature=11.1 1465839830100400200
 
-    #payload =
-    print(time.time() * 10 ** 9)
+    payload = "observations,host=gw1.bocuse.nl,CPUtemperatureUom='°C',GPUtemperatureUom='°C' CPUtemperature="\
+              + str(18.1) + ",GPUtemperature=" + str(11.1) + " " + str(timenownano())
+
+    print(payload)
 
     #send over MQTT
     #try:
-    #    publishtemperatures(topic="", payload="")
+    publishtemperatures(topic=hostName + "/dev2app/observation", payload=payload)
 
     sys.exit(0)
 
