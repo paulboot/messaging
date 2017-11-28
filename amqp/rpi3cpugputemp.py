@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 import sys
 if sys.version_info < (3, 0):
@@ -64,9 +65,11 @@ def main():
 
     #h2o_feet,location=coyote_creek water_level=8.120, level\ description = "between 6 and 9 feet" 1439856000
     #weather,location=us-midwest temperature=82 1465839830100400200
-    #observations,host=gw1.bocuse.nl,CPUtemperatureUom='°C',GPUtemperatureUom='°C' CPUtemperature=18.1,GPUtemperature=11.1 1465839830100400200
+    #observations,host=gw1.bocuse.nl,CPUtemperatureUom='C',GPUtemperatureUom='C' CPUtemperature=18.1,GPUtemperature=11.1 1465839830100400200
+    test = u"°Cbla"
+    print(type(test))
 
-    payload = "observations,host=gw1.bocuse.nl,CPUtemperatureUom='°C',GPUtemperatureUom='°C' CPUtemperature="\
+    payload = "observations,host=gw1.bocuse.nl,CPUtemperatureUom=\'u'°C'\',GPUtemperatureUom=\'u'°C'\' CPUtemperature="\
               + str(18.1) + ",GPUtemperature=" + str(11.1) + " " + str(timenownano())
 
     print(payload)
