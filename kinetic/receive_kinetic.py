@@ -17,9 +17,38 @@ import argparse
 import datetime
 import logging
 import json
+from influxdb import InfluxDBClient
+
+
 
 def timenownano():
     return "%18.f" % (time.time() * 10 ** 9)
+
+
+def setupdb(influxDbHost, influxDbPort, influxDbUser, influxDbPassword, influxDbName):
+
+    print("Connect to DB: %s %i" % (influxDbHost, influxDbPort))
+    client = InfluxDBClient(influxDbHost, influxDbPort, influxDbUser, influxDbPassword, influxDbName)
+
+    print("Create database: " + influxDbName)
+    client.create_database(influxDbName)
+
+    print("Create a retention policy")
+    client.create_retention_policy('365d_policy', '365d', 365, default=True)
+
+    print("Switch user: " + influxDbName)
+    client.switch_user(influxDbName, influxDbPassword)
+
+    return client
+
+
+def insertindb(client,line):
+
+    print("Write points: {0}".format(line))
+    client.write_points(line, time_precision='ms', protocol='line')
+
+    return True
+
 
 def callback(ch, method, properties, body):
     print(" [x] rk: {}, headers: {}, msg: {}, ts: {}".
@@ -28,11 +57,27 @@ def callback(ch, method, properties, body):
 
     print('-----------')
     dict = json.loads(str(body, 'utf-8'))
-    payload = "observations,host=gw-zh-delft01,units=" + dict['assetpi']['units'] + " " +\
-              "WaterTemperature=" + str(dict['assetpi']['temperature']) + " " +\
+    payload = "WaterTemperature,gateway=gw-zh-delft01,units=" + dict['assetpi']['units'] + " " +\
+              "average=" + str(dict['assetpi']['temperature']) + " " +\
               str(dict['assetpi']['timestamp'])
-    print(payload)
-    # Send to InfluxDB over HTTP
+    insertindb(main.influxDbClient, payload)
+
+    json_payload = [
+        {
+            "measurement": "WaterTemperature",
+            "tags": {
+                "gateway": "gw-zh-delft01",
+                "units": dict['assetpi']['units']
+            },
+            "time": "2009-11-10T23:00:00Z",
+            "fields": {
+                "average": dict['assetpi']['temperature']
+            }
+        }
+    ]
+    print(json_payload)
+    # Send to InfluxDB
+
 
 def main():
     logging.basicConfig(level=logging.INFO)
@@ -44,6 +89,8 @@ def main():
     queue_name = user + ':' + datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     credentials = pika.PlainCredentials(user, password)
 
+    main.influxDbClient = setupdb(influxDbHost, influxDbPort, influxDbUser, influxDbPassword, influxDbName)
+
     try:
         # Setup our ssl options
         ssl_options = ({"ca_certs": "cert.crt",
@@ -54,7 +101,7 @@ def main():
         connection = pika.BlockingConnection(parameters)
         channel = connection.channel()
         channel.queue_declare(queue=queue_name, passive=False, 
-                              durable=False, exclusive=False, auto_delete=True) # Declare a queue
+                              durable=False, exclusive=False, auto_delete=True)
         if label:
             lbl = label.split('=')
             channel.queue_bind(exchange=exchange, queue=queue_name, routing_key=routingkey,
