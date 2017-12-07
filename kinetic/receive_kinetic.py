@@ -42,7 +42,7 @@ def setupdb(influxDbHost, influxDbPort, influxDbUser, influxDbPassword, influxDb
     return client
 
 
-def insertindb(client,line):
+def insertindb(client, line):
 
     print("Write points: {0}".format(line))
     client.write_points(line, time_precision='ms', protocol='line')
@@ -55,28 +55,22 @@ def callback(ch, method, properties, body):
           format(method.routing_key, properties.headers, body,
                  datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")))
 
-    print('-----------')
     dict = json.loads(str(body, 'utf-8'))
-    payload = "WaterTemperature,gateway=gw-zh-delft01,units=" + dict['assetpi']['units'] + " " +\
-              "average=" + str(dict['assetpi']['temperature']) + " " +\
-              str(dict['assetpi']['timestamp'])
-    insertindb(main.influxDbClient, payload)
+    if 'assetpi' in dict:
+        if 'data' in dict['assetpi']:
+            data = dict['assetpi']['data']
+            payload = "WaterTemperature,gateway=gw-zh-delft01,units=" + data['units'] + " " +\
+                      "average=" + str(data['temperature']) + " " +\
+                      str(data['timestamp'])
+        elif 'errors' in dict['assetpi']:
+            print("Error: invalid data %s" % dict['assetpi']['errors'])
+            #ToDo Store Error in database using diffeent format
+        else:
+            print("Error: unknown key found in dict")
+    else:
+        print("Error: no assetpi key found, ignoring message")
 
-    json_payload = [
-        {
-            "measurement": "WaterTemperature",
-            "tags": {
-                "gateway": "gw-zh-delft01",
-                "units": dict['assetpi']['units']
-            },
-            "time": "2009-11-10T23:00:00Z",
-            "fields": {
-                "average": dict['assetpi']['temperature']
-            }
-        }
-    ]
-    print(json_payload)
-    # Send to InfluxDB
+    insertindb(main.influxDbClient, payload)
 
 
 def main():
