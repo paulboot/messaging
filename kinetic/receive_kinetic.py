@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python -u
 # -*- coding: utf-8 -*-
 #
 # COPYRIGHT
@@ -45,9 +45,8 @@ def setupdb(influxDbHost, influxDbPort, influxDbUser, influxDbPassword, influxDb
 def insertindb(client, line):
 
     print("Write points: {0}".format(line))
-    client.write_points(line, time_precision='ms', protocol='line')
 
-    return True
+    return client.write_points(line, time_precision='ms', protocol='line')
 
 
 def callback(ch, method, properties, body):
@@ -113,8 +112,17 @@ def main():
         sys.exit()
     print(' [*] Waiting for data [tags: {}]. To exit press CTRL+C'.format(label))
     channel.basic_consume(callback,  queue=queue_name, no_ack=True)
-    channel.start_consuming()
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # Untested what happens during time out, pika.exceptions.ConnectionClosed: (320, 'Too Many Missed Heartbeats, No reply in 120 seconds')
+    while True:
+        try:
+            channel.start_consuming()
+        except Exception as e:
+            logging.error(amqphost + " Connection during consuming!")
+            logging.error(" %s", e.message)
+            logging.error(type(e))
+            time.sleep(10)
+
+
 if __name__ == "__main__":
    main()
